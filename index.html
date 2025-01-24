@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Odyssey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            touch-action: none;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            overflow: hidden;
+            border: 3px solid #00f7ff;
+            background: rgba(0, 0, 0, 0.98);
+            box-shadow: 0 0 30px rgba(0, 183, 255, 0.3);
+        }
+
+        #rocket {
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff4444 0%, #ff6b6b 100%);
+            border-radius: 5px 15px 15px 5px;
+            transform: translateY(-50%);
+            z-index: 3;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 20px rgba(255, 75, 75, 0.8);
+            clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
+        }
+
+        #rocket::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(45deg, #ff9900 0%, #ff5500 100%);
+            border-radius: 50% 0 0 50%;
+            clip-path: polygon(0% 20%, 100% 0%, 100% 100%, 0% 80%);
+        }
+
+        #rocket::after {
+            content: '';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #00f7ff;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.8);
+        }
+
+        .rocket-wing {
+            position: absolute;
+            background: #ff4444;
+            width: 15px;
+            height: 40px;
+            border-radius: 5px;
+        }
+
+        #wing-left {
+            top: -12px;
+            left: 15px;
+            transform: rotate(-30deg);
+            background: linear-gradient(45deg, #ff4444 0%, #ff6b6b 100%);
+        }
+
+        #wing-right {
+            bottom: -12px;
+            left: 15px;
+            transform: rotate(30deg);
+            background: linear-gradient(45deg, #ff4444 0%, #ff6b6b 100%);
+        }
+
+        .star {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            z-index: 1;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+            animation: twinkle 1.5s infinite alternate;
+        }
+
+        .obstacle {
+            position: absolute;
+            z-index: 2;
+            width: 60px;
+            height: 60px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .asteroid {
+            background: linear-gradient(45deg, #444, #666);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .enemy {
+            background: linear-gradient(45deg, #ff4444, #ff0000);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+        }
+
+        #score {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #00f7ff;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 100;
+            text-shadow: 0 0 10px rgba(0, 247, 255, 0.8);
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            border: 2px solid #00f7ff;
+        }
+
+        #fuelGauge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 200px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            border: 2px solid #00f7ff;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #fuelBar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88 0%, #00cc77 100%);
+            transition: width 0.3s ease;
+        }
+
+        .fuel-canister {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(45deg, #00ff88 0%, #009944 100%);
+            border-radius: 5px 15px 15px 5px;
+            animation: float 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            z-index: 2;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #00f7ff;
+            z-index: 200;
+            text-align: center;
+        }
+
+        @keyframes twinkle {
+            from { opacity: 0.7; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(0.95); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        button {
+            background: linear-gradient(45deg, #00f7ff, #0066ff);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #0066ff, #00f7ff);
+            transform: scale(1.08);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">SCORE: 0</div>
+        <div id="fuelGauge">
+            <div id="fuelBar"></div>
+        </div>
+        <div id="gameOver">
+            <h2 style="font-size: 3em; margin-bottom: 20px;">GAME OVER!</h2>
+            <p id="finalScore" style="font-size: 1.5em;">FINAL SCORE: 0</p>
+            <button onclick="resetGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('gameContainer');
+        
+        const rocket = document.createElement('div');
+        rocket.id = 'rocket';
+        
+        const wingLeft = document.createElement('div');
+        wingLeft.className = 'rocket-wing';
+        wingLeft.id = 'wing-left';
+        rocket.appendChild(wingLeft);
+        
+        const wingRight = document.createElement('div');
+        wingRight.className = 'rocket-wing';
+        wingRight.id = 'wing-right';
+        rocket.appendChild(wingRight);
+        
+        container.appendChild(rocket);
+
+        const config = {
+            BASE_SPEED: 4,
+            MAX_SPEED: 8,
+            ROCKET_SPEED: 7,
+            STAR_SPAWN_RATE: 0.4,
+            OBSTACLE_SPAWN_RATE: 0.014,
+            FUEL_SPAWN_RATE: 0.008,
+            FUEL_DEPLETION_RATE: 0.2,
+            FUEL_REFILL_AMOUNT: 35,
+            SPEED_INCREASE: 0.0035,
+            COLLISION_OFFSET: 15
+        };
+
+        let gameState = {
+            rocketY: 300,
+            score: 0,
+            fuel: 100,
+            isRunning: true,
+            obstacles: [],
+            fuelCanisters: [],
+            stars: [],
+            touchY: null,
+            keysPressed: {},
+            currentSpeed: config.BASE_SPEED,
+            lastUpdate: performance.now(),
+            deltaTime: 0
+        };
+
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.cssText = `
+                left: 800px;
+                top: ${Math.random() * 580 + 10}px;
+                width: ${2 + Math.random() * 5}px;
+                height: ${2 + Math.random() * 5}px;
+                opacity: ${0.8 + Math.random() * 0.2};
+            `;
+            container.appendChild(star);
+            return {
+                element: star,
+                x: 800,
+                y: parseFloat(star.style.top),
+                speed: config.BASE_SPEED * (0.8 + Math.random() * 0.4)
+            };
+        }
+
+        function createObstacle() {
+            const type = Math.random() > 0.5 ? 'asteroid' : 'enemy';
+            const obstacle = document.createElement('div');
+            obstacle.className = `obstacle ${type}`;
+            obstacle.style.left = '800px';
+            obstacle.style.top = `${Math.random() * 500 + 50}px`;
+            container.appendChild(obstacle);
+            return {
+                element: obstacle,
+                x: 800,
+                y: parseInt(obstacle.style.top),
+                speed: config.BASE_SPEED * (type === 'asteroid' ? 0.9 : 1.1)
+            };
+        }
+
+        function createFuelCanister() {
+            const fuel = document.createElement('div');
+            fuel.className = 'fuel-canister';
+            fuel.style.left = '800px';
+            fuel.style.top = `${Math.random() * 500 + 50}px`;
+            container.appendChild(fuel);
+            return {
+                element: fuel,
+                x: 800,
+                y: parseInt(fuel.style.top),
+                speed: config.BASE_SPEED * 0.8
+            };
+        }
+
+        function updateSpeed() {
+            gameState.currentSpeed = Math.min(
+                config.BASE_SPEED + (gameState.score * config.SPEED_INCREASE),
+                config.MAX_SPEED
+            );
+        }
+
+        function updatePositions() {
+            const speedMultiplier = gameState.currentSpeed / config.BASE_SPEED;
+            
+            gameState.stars.forEach(star => {
+                star.x -= star.speed * speedMultiplier * gameState.deltaTime;
+                star.element.style.left = `${star.x}px`;
+            });
+
+            gameState.obstacles.forEach(obs => {
+                obs.x -= obs.speed * speedMultiplier * gameState.deltaTime;
+                obs.element.style.left = `${obs.x}px`;
+            });
+
+            gameState.fuelCanisters.forEach(fuel => {
+                fuel.x -= fuel.speed * speedMultiplier * gameState.deltaTime;
+                fuel.element.style.left = `${fuel.x}px`;
+            });
+        }
+
+        function checkCollisions() {
+            const rocketRect = rocket.getBoundingClientRect();
+            
+            // Check obstacle collisions
+            if (gameState.obstacles.some(obs => {
+                const obsRect = obs.element.getBoundingClientRect();
+                return !(
+                    rocketRect.right - config.COLLISION_OFFSET < obsRect.left ||
+                    rocketRect.left + config.COLLISION_OFFSET > obsRect.right ||
+                    rocketRect.bottom - config.COLLISION_OFFSET < obsRect.top ||
+                    rocketRect.top + config.COLLISION_OFFSET > obsRect.bottom
+                );
+            })) return true;
+
+            // Check fuel collisions
+            gameState.fuelCanisters = gameState.fuelCanisters.filter(fuel => {
+                const fuelRect = fuel.element.getBoundingClientRect();
+                const collision = !(
+                    rocketRect.right - config.COLLISION_OFFSET < fuelRect.left ||
+                    rocketRect.left + config.COLLISION_OFFSET > fuelRect.right ||
+                    rocketRect.bottom - config.COLLISION_OFFSET < fuelRect.top ||
+                    rocketRect.top + config.COLLISION_OFFSET > fuelRect.bottom
+                );
+                
+                if (collision) {
+                    gameState.fuel = Math.min(100, gameState.fuel + config.FUEL_REFILL_AMOUNT);
+                    fuel.element.remove();
+                    updateFuelDisplay();
+                    return false;
+                }
+                return true;
+            });
+
+            return false;
+        }
+
+        function updateFuelDisplay() {
+            document.getElementById('fuelBar').style.width = `${Math.max(0, gameState.fuel)}%`;
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameState.isRunning) return;
+
+            gameState.deltaTime = (timestamp - gameState.lastUpdate) / 16.6667;
+            gameState.lastUpdate = timestamp;
+
+            // Update fuel
+            gameState.fuel = Math.max(0, gameState.fuel - (config.FUEL_DEPLETION_RATE * gameState.deltaTime));
+            updateFuelDisplay();
+            if (gameState.fuel <= 0) return endGame();
+
+            updateSpeed();
+            
+            // Spawn objects
+            if (Math.random() < config.OBSTACLE_SPAWN_RATE * gameState.deltaTime) {
+                gameState.obstacles.push(createObstacle());
+            }
+            if (Math.random() < config.FUEL_SPAWN_RATE * gameState.deltaTime) {
+                gameState.fuelCanisters.push(createFuelCanister());
+            }
+            if (Math.random() < config.STAR_SPAWN_RATE * gameState.deltaTime) {
+                gameState.stars.push(createStar());
+            }
+
+            // Move rocket
+            if (gameState.keysPressed.ArrowUp) gameState.rocketY = Math.max(20, gameState.rocketY - (config.ROCKET_SPEED * gameState.deltaTime));
+            if (gameState.keysPressed.ArrowDown) gameState.rocketY = Math.min(550, gameState.rocketY + (config.ROCKET_SPEED * gameState.deltaTime));
+            if (gameState.touchY !== null) {
+                gameState.rocketY = Math.max(20, Math.min(550, gameState.touchY - 25));
+                gameState.touchY = null;
+            }
+            rocket.style.top = `${gameState.rocketY}px`;
+
+            updatePositions();
+
+            if (checkCollisions()) return endGame();
+
+            // Update score
+            gameState.score += Math.floor(10 * gameState.deltaTime);
+            document.getElementById('score').textContent = `SCORE: ${gameState.score}`;
+
+            // Cleanup objects
+            gameState.stars = gameState.stars.filter(star => {
+                if (star.x < -50) star.element.remove();
+                return star.x >= -50;
+            });
+
+            gameState.obstacles = gameState.obstacles.filter(obs => {
+                if (obs.x < -50) obs.element.remove();
+                return obs.x >= -50;
+            });
+
+            gameState.fuelCanisters = gameState.fuelCanisters.filter(fuel => {
+                if (fuel.x < -50) fuel.element.remove();
+                return fuel.x >= -50;
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameState.isRunning = false;
+            document.getElementById('gameOver').style.display = 'flex';
+            document.getElementById('finalScore').textContent = `FINAL SCORE: ${gameState.score}`;
+            rocket.style.transform = 'translateY(-50%) rotate(45deg)';
+        }
+
+        function resetGame() {
+            gameState.stars.forEach(star => star.element.remove());
+            gameState.obstacles.forEach(obs => obs.element.remove());
+            gameState.fuelCanisters.forEach(fuel => fuel.element.remove());
+
+            gameState = {
+                rocketY: 300,
+                score: 0,
+                fuel: 100,
+                isRunning: true,
+                obstacles: [],
+                fuelCanisters: [],
+                stars: [],
+                touchY: null,
+                keysPressed: {},
+                currentSpeed: config.BASE_SPEED,
+                lastUpdate: performance.now(),
+                deltaTime: 0
+            };
+
+            rocket.style.top = '300px';
+            rocket.style.transform = 'translateY(-50%)';
+            document.getElementById('gameOver').style.display = 'none';
+            updateFuelDisplay();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault();
+                gameState.keysPressed[e.key] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault();
+                gameState.keysPressed[e.key] = false;
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            gameState.touchY = e.touches[0].clientY - rect.top;
+        }, { passive: false });
+
+        resetGame();
+    </script>
+</body>
+</html>
